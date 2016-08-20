@@ -63,7 +63,7 @@ announce_attach="true"
 announce_server_change="true"
 
 # Prevent users from changing their $USER env variable to become host.
-username=`whoami`
+username=$(whoami)
 # Set $EDITOR default to vi if not configured on host machine.
 editor=${EDITOR:="vi"}
 
@@ -95,7 +95,7 @@ load_server_name() {
       fi
     else
       # If ~/.wemux_last_server doesn't exist set to default_server_name
-      server="$default_server_name-`whoami`"
+      server="$default_server_name-${username}"
     fi
   else
     # If allow_server_change is disabled, set to default_server_name
@@ -497,7 +497,7 @@ host_mode() {
     announce_connection "host" start_attached_server
   else
     case "$1" in
-      start|s)            announce_connection "host" start_server;;
+      start|s)            announce_connection "host" start_attached_server;;
       start_detached|sd)  announce_connection "host" start_detached_server;;
       attach|a)           announce_connection "host" reattach;;
       stop|st)            shift; stop_server "$@";;
