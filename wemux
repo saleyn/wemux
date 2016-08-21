@@ -68,11 +68,13 @@ username=$(whoami)
 editor=${EDITOR:="vi"}
 
 # Load configuration options from /usr/local/etc/wemux.conf
+[ ! -d "${HOME}/.config}"      ] && mkdir -p "${HOME}/.config"
 [ -f /usr/local/etc/wemux.conf ] && . /usr/local/etc/wemux.conf
+# User config overrides global config
+[ -f ${HOME}/.config/.wemuxrc  ] && . ${HOME}/.config/.wemuxrc
 
 # Last connected server
 wemux_last_server="${HOME}/.config/.wemux_last_server"
-[ ! -d "${wemux_last_server%/*}" ] && mkdir -p "${wemux_last_server%/*}"
 
 # Sanitize server name, replace spaces and underscores with dashes.
 # Remove all non alpha-numeric characters, convert to lowercase.
