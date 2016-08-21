@@ -269,6 +269,11 @@ and notifications when users attach/detach.
 
   This can be changed by setting `default_server_name="customname"`
 
+### Default Server Socket Permissions
+  The default server socket permissions are 1777.
+
+  This can be customized by changing `socket_perm=XXXX`
+
 ### Changing Servers
   The ability to change servers can be enabled by setting
   `allow_server_change="true"`
