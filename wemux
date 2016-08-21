@@ -70,6 +70,10 @@ editor=${EDITOR:="vi"}
 # Load configuration options from /usr/local/etc/wemux.conf
 [ -f /usr/local/etc/wemux.conf ] && . /usr/local/etc/wemux.conf
 
+# Last connected server
+wemux_last_server="${HOME}/.config/.wemux_last_server"
+[ ! -d "${wemux_last_server%/*}" ] && mkdir -p "${wemux_last_server%/*}"
+
 # Sanitize server name, replace spaces and underscores with dashes.
 # Remove all non alpha-numeric characters, convert to lowercase.
 sanitize_server_name() {
@@ -86,15 +90,15 @@ sanitize_server_name() {
 # If default_server_name is set in wemux.conf it will be used instead of 'wemux'
 load_server_name() {
   if [ "$allow_server_change" == "true" ]; then
-    if [ -f ~/.wemux_last_server ]; then
-      unclean_server=`cat ~/.wemux_last_server`
+    if [ -f ${wemux_last_server} ]; then
+      unclean_server=$(cat ${wemux_last_server})
       # Sanitize loaded server name.
       server=`sanitize_server_name $unclean_server`
       if ! [[ $unclean_server == $server ]]; then
-        echo "$server" > ~/.wemux_last_server
+        echo "$server" > ${wemux_last_server}
       fi
     else
-      # If ~/.wemux_last_server doesn't exist set to default_server_name
+      # If ${wemux_last_server} doesn't exist set to default_server_name
       server="$default_server_name-${username}"
     fi
   else
@@ -235,6 +239,13 @@ display_users() {
     redirect=`$wemux display-message "$(wemux users)" 2>&1`
 }
 
+# Display the server name
+display_info() {
+    echo "Server:  $server"
+    echo "Session: $client_session"
+    echo "Socket:  $socket"
+}
+
 # Returns the host's tty and server name.
 get_host_session() {
   redirect=`wemux server-info 2>&1`; server_running=$?
@@ -355,7 +366,7 @@ change_server() {
       [ "$announce_server_change" == "true" ] && redirect=`$wemux display-message \
         "$username has switched to server: $new_server" 2>&1`
       echo "Changed wemux server from '$old_server' to '$new_server'"
-      echo $new_server > ~/.wemux_last_server
+      echo $new_server > ${wemux_last_server}
       # Rebuild wemux prefix for new server name.
       build_wemux_prefix
       # Announce that the user has joined to new server.
@@ -381,8 +392,9 @@ host_mode() {
   start_server() {
     if ! session_exists; then
       $wemux new-session -d -s $server
+      # Socket permission ${socket_perm} is read from configuration
       # Open tmux socket to all users to allow clients to connect.
-      chmod 1777 $socket
+      chmod ${socket_perm:-1777} $socket
       echo "wemux server started on '$server'."
     fi
 #    reattach
@@ -466,29 +478,30 @@ host_mode() {
     echo "Usage: wemux [command]"
     echo "To host a wemux server please use one of the following:"
     echo ""
-    echo "    [s]       start: Start the wemux server/attach to an existing wemux server."
-    echo "    [sd]      start_detached: Start the wemux server and stay detached."
-    echo "    [a]      attach: Attach to an existing wemux server."
-    echo "    [k]        stop: Kill the wemux server '$server', delete its socket."
+    echo "    [s]           start: Start the wemux server/attach to an existing wemux server."
+    echo "    [sd] start_detached: Start the wemux server and stay detached."
+    echo "    [a]          attach: Attach to an existing wemux server."
+    echo "    [k]            stop: Kill the wemux server '$server', delete its socket."
     echo ""
+    echo "    [i]            info: Display server info."
     if [ "$allow_server_change" == "true" ]; then
-      echo "    [j] join [name]: Join the specified wemux server."
-      echo "    [j]        join: Display the current wemux server."
-      echo "    [d]       reset: Join default wemux server: $default_server_name"
+      echo "    [j]     join [name]: Join the specified wemux server."
+      echo "    [j]            join: Display the current wemux server."
+      echo "    [d]           reset: Join default wemux server: $default_server_name"
       if [ "$allow_server_list" == "true" ]; then
-        echo "    [l]        list: List all currently active wemux servers."
+        echo "    [l]            list: List all currently active wemux servers."
       fi
     fi
     if [ "$allow_user_list" == "true" ]; then
-      echo "    [u]       users: List all users currently attached to '$server'"
+      echo "    [u]           users: List all users currently attached to '$server'"
     fi
     if [ "$allow_kick_user" == "true" ]; then
-      echo "               kick: Disconnect an SSH user, remove their wemux server."
+      echo "                   kick: Disconnect an SSH user, remove their wemux server."
     fi
     echo ""
-    echo "    [c]      config: Open the wemux configuration file in $EDITOR."
-    echo "    [h]        help: Display this screen."
-    echo "            no args: Start the wemux server/attach to an existing wemux server."
+    echo "    [c]          config: Open the wemux configuration file in $EDITOR."
+    echo "    [h]            help: Display this screen."
+    echo "                no args: Start the wemux server/attach to an existing wemux server."
   }
 
   # Host mode command handling:
@@ -515,6 +528,7 @@ host_mode() {
       kick)               kick_user $2;;
       status_users)       status_users;;
       display_users)      display_users;;
+      info|i)             display_info;;
       version|v)          display_version;;
       conf*|c)            $editor /usr/local/etc/wemux.conf;;
       *)                  if ! $wemux "$@"; then
@@ -652,6 +666,7 @@ client_mode() {
     fi
     echo ""
     echo "    [h]        help: Display this screen."
+    echo "    [i]        info: Display server info."
     if [ "$default_client_mode" == "rogue" ] && [ "$allow_rogue_mode" == "true" ]; then
       echo "            no args: Attach to '$server' in rogue mode."
     elif [ "$default_client_mode" == "pair" ] && [ "$allow_pair_mode" == "true" ]; then
@@ -690,6 +705,7 @@ client_mode() {
       status_users)  status_users;;
       display_users) display_users;;
       version|v)     display_version;;
+      info|i)        display_info;;
       send)          send $@;;
       *)             if ! $wemux "$@"; then
                        echo "To see a list of wemux commands enter 'wemux help'"
@@ -725,7 +741,7 @@ user_is_a_host() {
 
 allowed_nested_command() {
   commands=(togglemirrored setmirrored summon summon_all send users u list l display_users
-  status_users list-clients kill-sesssion kick version v)
+  info status_users list-clients kill-sesssion kick version v)
   for command in "${commands[@]}"; do
     [[ "$command" == "$1" ]] && return 0
   done
