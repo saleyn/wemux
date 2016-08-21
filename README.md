@@ -70,13 +70,6 @@ and notifications when users attach/detach.
   To upgrade to a new version of wemux return to the `/usr/local/share/wemux`
   directory and perform a `git pull`
 
-## Configuration ##
-  Wemux's global configuration file is: `/usr/local/etc/wemux.conf`
-  A user may customize configuration options in a user-specific file located in:
-  `${HOME}/.config/.wemuxrc`. If found, this file is loaded right after
-  the global `/usr/local/etc/wemux.conf` file, and the options defined in the
-  user-specific configuration file override the global wemux options.
-
 ## Host Commands
 #### wemux start
   Use `wemux start` to start a wemux server, chmod /tmp/wemux-wemux to 1777 so
@@ -246,6 +239,11 @@ and notifications when users attach/detach.
   `/usr/local/etc/wemux.conf`.  In most cases the only option that must be changed is the
   `host_list` array. To open your wemux configuration file, you can either open
   `/usr/local/etc/wemux.conf` manually or run `wemux config`
+
+  A user may customize configuration options in a user-specific file located in:
+  `${HOME}/.config/.wemuxrc`. If found, this file is loaded right after
+  the global `/usr/local/etc/wemux.conf` file, and the options defined in the
+  user-specific configuration file override the global wemux options.
 
 ### Host Mode
   To have an account act as host, ensure that you have added their username to the
